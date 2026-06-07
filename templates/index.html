@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 Game Dev Co-Pilot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 { color: #e94560; text-align: center; }
+        .subtitle { text-align: center; color: #aaa; margin-bottom: 30px; }
+        input {
+            width: 70%;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: none;
+            background: #16213e;
+            color: white;
+        }
+        button {
+            padding: 12px 20px;
+            background: #e94560;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        button:hover { background: #c73652; }
+        .agent-box {
+            background: #16213e;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            display: none;
+        }
+        .agent-box h3 { margin-top: 0; }
+        .score { font-size: 24px; font-weight: bold; color: #e94560; }
+        .verdict { font-size: 20px; font-weight: bold; }
+        .loading { text-align: center; color: #e94560; display: none; }
+        pre { background: #0f3460; padding: 15px; border-radius: 8px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🎮 Game Dev Co-Pilot</h1>
+    <p class="subtitle">Type a game idea and 3 AI agents will build it for you!</p>
+
+    <div style="text-align:center">
+        <input type="text" id="gameIdea" placeholder="e.g. space shooter, ninja vs zombies...">
+        <button onclick="generate()">🚀 Build Game</button>
+    </div>
+
+    <div class="loading" id="loading">
+        <h3>⏳ Agents are working... this takes ~2 minutes</h3>
+        <p>Designer → Coder → Playtester</p>
+    </div>
+
+    <div class="agent-box" id="designerBox">
+        <h3>🎨 Designer Agent</h3>
+        <pre id="specOutput"></pre>
+    </div>
+
+    <div class="agent-box" id="reviewBox">
+        <h3>🐛 Playtester Agent Review</h3>
+        <p class="score" id="scoreOutput"></p>
+        <p id="verdictOutput"></p>
+        <ul id="suggestionsOutput"></ul>
+    </div>
+
+    <script>
+        async function generate() {
+            const idea = document.getElementById('gameIdea').value;
+            if (!idea) return alert('Enter a game idea first!');
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('designerBox').style.display = 'none';
+            document.getElementById('reviewBox').style.display = 'none';
+
+            const response = await fetch('/generate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({idea: idea})
+            });
+
+            const data = await response.json();
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('specOutput').textContent = JSON.stringify(data.spec, null, 2);
+            document.getElementById('scoreOutput').textContent = `Score: ${data.review.overall_score}/10`;
+            document.getElementById('verdictOutput').textContent = `Verdict: ${data.review.verdict.toUpperCase()}`;
+
+            const ul = document.getElementById('suggestionsOutput');
+            ul.innerHTML = '';
+            data.review.suggestions.forEach(s => {
+                const li = document.createElement('li');
+                li.textContent = s;
+                ul.appendChild(li);
+            });
+
+            document.getElementById('designerBox').style.display = 'block';
+            document.getElementById('reviewBox').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
