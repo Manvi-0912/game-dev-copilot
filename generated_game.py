@@ -1,57 +1,74 @@
-import random # For random chances in combat and evasion
+import random # Needed for random choices like dragon types and enemy stats
 
-# Game state variables: Player health (hp), damage (dmg), upgrade points (upgrades)
-hp, dmg, upgrades = 100, 20, 0 
-# Current wave (wave) and total waves (max_waves), including the final boss
-wave, max_waves = 1, 5 
+# Player's current dragon, initialized after hatching
+player_dragon = None
 
-# Game introduction
-print("GALACTIC ASSAULT\nPilot your ship, protect the galaxy!\n")
-
-# Main game loop: Continues as long as the player is alive and there are waves left
-while hp > 0 and wave <= max_waves:
-    print(f"\n--- WAVE {wave} ---")
-    # Enemy health (eh) and damage (ed) scale per wave; final boss (max_waves) has fixed higher stats
-    eh = 250 if wave == max_waves else 50 + (wave * 10) 
-    ed = 40 if wave == max_waves else 15 + (wave * 5) 
-    print(f"Enemy Health: {eh} | Your Health: {hp} | Upgrades: {upgrades}")
-
-    # Combat loop for the current wave: continues until enemy or player is defeated
-    while eh > 0 and hp > 0:
-        action = input("Action (attack/evade/upgrade): ").lower()
-
-        if action == "attack": # Player chooses to attack
-            print(f"You fire, dealing {dmg} damage!")
-            eh -= dmg # Decrease enemy health
-            if eh > 0: # If enemy is still alive, they counter-attack
-                if random.random() < 0.7: # 70% chance for enemy to hit player
-                    hp -= ed; print(f"Enemy hits! You take {ed} damage. HP: {max(0, hp)}")
-                else:
-                    print("Enemy attack missed!")
-        elif action == "evade": # Player chooses to evade
-            if random.random() < 0.6: # 60% chance to completely evade
-                print("You skillfully dodge all incoming fire!")
-            else: # Partial evade, player takes half damage
-                hp -= ed // 2; print(f"Partial evade! Took {ed // 2} damage. HP: {max(0, hp)}")
-            # Note: For simplicity, choosing "evade" means the enemy doesn't counter-attack this turn.
-        elif action == "upgrade": # Player chooses to upgrade
-            if upgrades > 0: # Check if upgrade points are available
-                choice = input("Upgrade (health/damage): ").lower()
-                if choice == "health": hp += 25; upgrades -= 1; print("Shields reinforced! +25 HP.")
-                elif choice == "damage": dmg += 10; upgrades -= 1; print("Weapon enhanced! +10 Damage.")
-                else: print("Invalid upgrade choice.")
-            else: print("No upgrade points available.")
-        else: print("Invalid action.")
-
-    if hp <= 0: break # Break main loop if player lost during combat
+def game_intro():
+    # Welcomes player, simulates egg discovery and hatching
+    print("Welcome to Dragon Tamer!")
+    print("You've found a mysterious egg...")
+    input("Press Enter to hatch it!") # Nurturing/waiting stage
     
-    # If enemy defeated, progress to next wave
-    print(f"Wave {wave} defeated! You scavenge resources.")
-    upgrades += 1 # Gain an upgrade point
-    # Small health regeneration after a wave, capped based on player's overall progress
-    hp = min(100 + (wave * 5), hp + 20) 
-    wave += 1 # Advance to the next wave
+    name = input("Name your dragon: ")
+    d_type = random.choice(['Fire', 'Water', 'Grass']) # Random elemental type
+    # Initialize player's dragon with base stats
+    global player_dragon
+    player_dragon = {'name': name, 'type': d_type, 'power': 10, 'hp': 50}
+    print(f"It's {player_dragon['name']}, a {player_dragon['type']} dragon!") # Unique dragon born
 
-# Game end messages: Displays win or lose condition
-print("\n--- GAME OVER ---") if hp <= 0 else print("\n--- VICTORY! ---")
-print("Your ship destroyed!") if hp <= 0 else print("Galaxy saved from invasion!")
+def train():
+    # Dragon training: increases power and HP (simplified growth path)
+    print(f"\nTraining {player_dragon['name']}...")
+    player_dragon['power'] += 2
+    player_dragon['hp'] += 5 # HP also increases with training
+    print(f"{player_dragon['name']} stats up! P:{player_dragon['power']} HP:{player_dragon['hp']}")
+    if player_dragon['power'] > 20: print("Your dragon feels stronger, perhaps it's evolving!") # Basic evolution hint
+
+def battle():
+    # Turn-based combat against a wild dragon
+    e_type = random.choice(['Fire', 'Water', 'Grass']) # Random enemy type
+    enemy = {'name': f'Wild {e_type}', 'type': e_type, 'power': random.randint(8,15), 'hp': random.randint(30,60)}
+    print(f"\nA {enemy['name']} ({enemy['type']}, P:{enemy['power']}, HP:{enemy['hp']}) appeared!")
+
+    # Battle loop: continues until one dragon's HP reaches 0 or below
+    while player_dragon['hp'] > 0 and enemy['hp'] > 0:
+        dmg_p = player_dragon['power'] # Player's base damage
+        # Apply elemental advantage/weakness
+        if (player_dragon['type'] == 'Fire' and e_type == 'Grass') or \
+           (player_dragon['type'] == 'Water' and e_type == 'Fire') or \
+           (player_dragon['type'] == 'Grass' and e_type == 'Water'): dmg_p += 5
+        enemy['hp'] -= dmg_p # Player attacks
+        print(f"{player_dragon['name']} hits {enemy['name']} for {dmg_p} dmg! Enemy HP: {max(0,enemy['hp'])}")
+        if enemy['hp'] <= 0: break # Check if enemy fainted
+
+        player_dragon['hp'] -= enemy['power'] # Enemy attacks
+        print(f"{enemy['name']} hits {player_dragon['name']} for {enemy['power']} dmg! Your HP: {max(0,player_dragon['hp'])}")
+    
+    # Battle outcome and rewards/penalties
+    if player_dragon['hp'] <= 0:
+        print(f"\n{player_dragon['name']} fainted! You lost the battle. Game Over.")
+        exit() # Player goal not achieved if dragon faints
+    else:
+        print(f"\n{player_dragon['name']} won! Power +1.") # Training/evolution mechanic
+        player_dragon['power'] += 1
+        # Restore player dragon's HP, scaling with new power level
+        player_dragon['hp'] = 50 + (player_dragon['power'] - 10) * 2
+
+def main_game_loop():
+    # Main game loop for player interaction
+    game_intro() # Start the adventure!
+
+    while True: # Game continues until player exits or loses
+        # Display current dragon stats
+        print(f"\n--- {player_dragon['name']} ({player_dragon['type']}) P:{player_dragon['power']} HP:{player_dragon['hp']} ---")
+        print("1. Train | 2. Battle | 3. Exit") # Menu options
+        choice = input("Action: ").strip()
+
+        if choice == '1': train() # Dragon Training & Evolution
+        elif choice == '2': battle() # Turn-based Dragon Combat
+        elif choice == '3': print("Thanks for playing Dragon Tamer!"); break # Exit game
+        else: print("Invalid choice. Try again.")
+
+# Ensures main_game_loop runs when script is executed
+if __name__ == "__main__":
+    main_game_loop()

@@ -1,113 +1,624 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎮 Game Dev Co-Pilot</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #1a1a2e;
-            color: #eee;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        h1 { color: #e94560; text-align: center; }
-        .subtitle { text-align: center; color: #aaa; margin-bottom: 30px; }
-        input {
-            width: 70%;
-            padding: 12px;
-            font-size: 16px;
-            border-radius: 8px;
-            border: none;
-            background: #16213e;
-            color: white;
-        }
-        button {
-            padding: 12px 20px;
-            background: #e94560;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            margin-left: 10px;
-        }
-        button:hover { background: #c73652; }
-        .agent-box {
-            background: #16213e;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
-            display: none;
-        }
-        .agent-box h3 { margin-top: 0; }
-        .score { font-size: 24px; font-weight: bold; color: #e94560; }
-        .verdict { font-size: 20px; font-weight: bold; }
-        .loading { text-align: center; color: #e94560; display: none; }
-        pre { background: #0f3460; padding: 15px; border-radius: 8px; overflow-x: auto; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Game Dev Co-Pilot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #ffffff;
+      --surface: #f7f7f7;
+      --border: #e5e5e5;
+      --border-strong: #c8c8c8;
+      --text1: #0a0a0a;
+      --text2: #525252;
+      --text3: #a3a3a3;
+      --accent: #0a0a0a;
+      --success: #16a34a;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --sans: 'DM Sans', sans-serif;
+      --mono: 'DM Mono', monospace;
+      --radius: 8px;
+    }
+    html { font-size: 16px; }
+    body {
+      background: var(--bg);
+      color: var(--text1);
+      font-family: var(--sans);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    .topbar {
+      border-bottom: 1px solid var(--border);
+      padding: 0 40px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 10;
+    }
+    .logo {
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo-mark {
+      width: 22px;
+      height: 22px;
+      background: var(--text1);
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+    }
+    .topbar-right {
+      font-size: 0.78rem;
+      color: var(--text3);
+    }
+    .page {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 64px 40px 100px;
+    }
+    .hero { margin-bottom: 48px; }
+    .hero h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      letter-spacing: -0.035em;
+      line-height: 1.2;
+      margin-bottom: 10px;
+    }
+    .hero p {
+      font-size: 0.95rem;
+      color: var(--text2);
+      line-height: 1.6;
+      max-width: 420px;
+    }
+    .input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 48px;
+    }
+    .input-row input {
+      flex: 1;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      padding: 11px 14px;
+      font-size: 0.92rem;
+      font-family: var(--sans);
+      color: var(--text1);
+      background: var(--bg);
+      outline: none;
+      transition: border-color 0.12s;
+    }
+    .input-row input::placeholder { color: var(--text3); }
+    .input-row input:focus { border-color: var(--text1); }
+    .btn {
+      background: var(--text1);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 11px 20px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      font-family: var(--sans);
+      cursor: pointer;
+      transition: opacity 0.12s;
+      white-space: nowrap;
+    }
+    .btn:hover { opacity: 0.82; }
+    .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .pipeline {
+      margin-bottom: 48px;
+      position: relative;
+    }
+    .track-line {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      height: 1px;
+      background: var(--border);
+      z-index: 0;
+    }
+    .track-fill {
+      height: 1px;
+      background: var(--text1);
+      width: 0%;
+      transition: width 0.6s ease;
+    }
+    .track-steps {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      z-index: 1;
+    }
+    .track-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .track-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--border-strong);
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      transition: all 0.2s;
+    }
+    .track-dot.running {
+      border-color: var(--text1);
+      background: var(--text1);
+      animation: track-pulse 1s ease-in-out infinite;
+    }
+    .track-dot.done {
+      border-color: var(--text1);
+      background: var(--text1);
+    }
+    @keyframes track-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(10,10,10,0.2); }
+      50% { box-shadow: 0 0 0 5px rgba(10,10,10,0); }
+    }
+    .track-label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text3);
+    }
+    .track-label.active { color: var(--text1); }
+    .track-sublabel {
+      font-size: 0.68rem;
+      color: var(--text3);
+      margin-top: -6px;
+    }
+    .track-sublabel.running { color: var(--text2); }
+    .track-sublabel.done { color: var(--success); }
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 36px 0;
+    }
+    .section-eyebrow {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 16px;
+    }
+    .spec-table {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .spec-row {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      border-bottom: 1px solid var(--border);
+    }
+    .spec-row:last-child { border-bottom: none; }
+    .spec-key {
+      padding: 12px 16px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text3);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+    }
+    .spec-val {
+      padding: 12px 16px;
+      font-size: 0.88rem;
+      color: var(--text1);
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .tag {
+      padding: 2px 9px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 0.75rem;
+      color: var(--text2);
+    }
+    .code-wrap {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .code-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .code-filename {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--text2);
+    }
+    .btn-dl {
+      background: none;
+      border: 1px solid var(--border-strong);
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 0.72rem;
+      color: var(--text2);
+      font-family: var(--sans);
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .btn-dl:hover { border-color: var(--text1); color: var(--text1); }
+    .code-body {
+      padding: 16px;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      line-height: 1.8;
+      color: var(--text2);
+      background: var(--bg);
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .review-grid {
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .score-side {
+      padding: 24px 16px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .score-num {
+      font-size: 2.4rem;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+    .score-label {
+      font-size: 0.68rem;
+      color: var(--text3);
+      text-align: center;
+    }
+    .score-track {
+      width: 48px;
+      height: 2px;
+      background: var(--border);
+      border-radius: 1px;
+      overflow: hidden;
+    }
+    .score-track-fill {
+      height: 100%;
+      background: var(--text1);
+      border-radius: 1px;
+      width: 0;
+      transition: width 0.8s ease-out;
+    }
+    .verdict-side {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 6px;
+    }
+    .verdict-word {
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .verdict-word.needs { color: var(--warning); }
+    .verdict-word.ship { color: var(--success); }
+    .verdict-sub {
+      font-size: 0.82rem;
+      color: var(--text2);
+      line-height: 1.5;
+    }
+    .item-group {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .item-group-header {
+      padding: 10px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--text3);
+    }
+    .item {
+      display: flex;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.86rem;
+      color: var(--text2);
+      line-height: 1.5;
+      align-items: flex-start;
+    }
+    .item:last-child { border-bottom: none; }
+    .item-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      margin-top: 7px;
+      flex-shrink: 0;
+    }
+    .dot-bug { background: var(--danger); }
+    .dot-tip { background: var(--text3); }
+    #empty {
+      padding: 80px 0 40px;
+      text-align: center;
+    }
+    #empty p {
+      font-size: 0.88rem;
+      color: var(--text3);
+      line-height: 1.6;
+    }
+    #loading { display: none; padding: 40px 0; text-align: center; }
+    .loader {
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid var(--border);
+      border-top-color: var(--text1);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin: 0 auto 14px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading p { font-size: 0.85rem; color: var(--text3); }
+    #results { display: none; }
+    .footer {
+      margin-top: 80px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 0.75rem;
+      color: var(--text3);
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
 </head>
 <body>
-    <h1>🎮 Game Dev Co-Pilot</h1>
-    <p class="subtitle">Type a game idea and 3 AI agents will build it for you!</p>
-
-    <div style="text-align:center">
-        <input type="text" id="gameIdea" placeholder="e.g. space shooter, ninja vs zombies...">
-        <button onclick="generate()">🚀 Build Game</button>
+<header class="topbar">
+  <div class="logo">
+    <div class="logo-mark">G</div>
+    Game Dev Co-Pilot
+  </div>
+  <div class="topbar-right">3 agents · 1 idea · playable code</div>
+</header>
+<main class="page">
+  <div class="hero">
+    <h1>Describe a game.<br>We'll build it.</h1>
+    <p>Three AI agents work in sequence to turn your idea into running Python code automatically.</p>
+  </div>
+  <div class="input-row">
+    <input id="ideaInput" type="text" placeholder="e.g. ninja vs zombies, dragon tamer, ocean escape…" />
+    <button class="btn" id="buildBtn" onclick="startBuild()">Build game</button>
+  </div>
+  <div class="pipeline">
+    <div class="track-line"><div class="track-fill" id="trackFill"></div></div>
+    <div class="track-steps">
+      <div class="track-step">
+        <div class="track-dot" id="dot-d">1</div>
+        <div class="track-label" id="lbl-d">Designer</div>
+        <div class="track-sublabel" id="sub-d">—</div>
+      </div>
+      <div class="track-step">
+        <div class="track-dot" id="dot-c">2</div>
+        <div class="track-label" id="lbl-c">Coder</div>
+        <div class="track-sublabel" id="sub-c">—</div>
+      </div>
+      <div class="track-step">
+        <div class="track-dot" id="dot-p">3</div>
+        <div class="track-label" id="lbl-p">Playtester</div>
+        <div class="track-sublabel" id="sub-p">—</div>
+      </div>
     </div>
-
-    <div class="loading" id="loading">
-        <h3>⏳ Agents are working... this takes ~2 minutes</h3>
-        <p>Designer → Coder → Playtester</p>
+  </div>
+  <div id="empty">
+    <p>Enter a game idea above to start.<br>Results appear here when the pipeline finishes.</p>
+  </div>
+  <div id="loading">
+    <div class="loader"></div>
+    <p id="loadingText">Running pipeline — takes about 3 minutes</p>
+  </div>
+  <div id="results">
+    <hr class="divider" />
+    <div class="section-eyebrow">Game spec — Designer agent</div>
+    <div class="spec-table">
+      <div class="spec-row">
+        <div class="spec-key">Title</div>
+        <div class="spec-val" id="r-title">—</div>
+      </div>
+      <div class="spec-row">
+        <div class="spec-key">Genre</div>
+        <div class="spec-val" id="r-genre">—</div>
+      </div>
+      <div class="spec-row">
+        <div class="spec-key">Difficulty</div>
+        <div class="spec-val" id="r-difficulty">—</div>
+      </div>
+      <div class="spec-row">
+        <div class="spec-key">Goal</div>
+        <div class="spec-val" id="r-goal">—</div>
+      </div>
+      <div class="spec-row">
+        <div class="spec-key">Mechanics</div>
+        <div class="spec-val" id="r-mechanics">—</div>
+      </div>
     </div>
-
-    <div class="agent-box" id="designerBox">
-        <h3>🎨 Designer Agent</h3>
-        <pre id="specOutput"></pre>
+    <hr class="divider" />
+    <div class="section-eyebrow">Generated code — Coder agent</div>
+    <div class="code-wrap">
+      <div class="code-topbar">
+        <span class="code-filename" id="r-filename">generated_game.py</span>
+        <button class="btn-dl" onclick="downloadGame()">Download</button>
+      </div>
+      <div class="code-body" id="r-code">—</div>
     </div>
-
-    <div class="agent-box" id="reviewBox">
-        <h3>🐛 Playtester Agent Review</h3>
-        <p class="score" id="scoreOutput"></p>
-        <p id="verdictOutput"></p>
-        <ul id="suggestionsOutput"></ul>
+    <hr class="divider" />
+    <div class="section-eyebrow">Review — Playtester agent</div>
+    <div class="review-grid">
+      <div class="score-side">
+        <div class="score-num" id="r-score">—</div>
+        <div class="score-track"><div class="score-track-fill" id="r-sbar"></div></div>
+        <div class="score-label">out of 10</div>
+      </div>
+      <div class="verdict-side">
+        <div class="verdict-word" id="r-verdict">—</div>
+        <div class="verdict-sub" id="r-verdict-sub">—</div>
+      </div>
     </div>
-
-    <script>
-        async function generate() {
-            const idea = document.getElementById('gameIdea').value;
-            if (!idea) return alert('Enter a game idea first!');
-
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('designerBox').style.display = 'none';
-            document.getElementById('reviewBox').style.display = 'none';
-
-            const response = await fetch('/generate', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({idea: idea})
-            });
-
-            const data = await response.json();
-
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('specOutput').textContent = JSON.stringify(data.spec, null, 2);
-            document.getElementById('scoreOutput').textContent = `Score: ${data.review.overall_score}/10`;
-            document.getElementById('verdictOutput').textContent = `Verdict: ${data.review.verdict.toUpperCase()}`;
-
-            const ul = document.getElementById('suggestionsOutput');
-            ul.innerHTML = '';
-            data.review.suggestions.forEach(s => {
-                const li = document.createElement('li');
-                li.textContent = s;
-                ul.appendChild(li);
-            });
-
-            document.getElementById('designerBox').style.display = 'block';
-            document.getElementById('reviewBox').style.display = 'block';
-        }
-    </script>
+    <div class="item-group" id="r-bugs-wrap">
+      <div class="item-group-header">Bugs found</div>
+      <div id="r-bugs"></div>
+    </div>
+    <div class="item-group" id="r-sug-wrap">
+      <div class="item-group-header">Suggestions</div>
+      <div id="r-suggestions"></div>
+    </div>
+  </div>
+  <div class="footer">
+    <span>Game Dev Co-Pilot</span>
+    <span>Built by Manvi Kumari</span>
+  </div>
+</main>
+<script>
+  let generatedCode = '';
+  function dot(id, state) {
+    const d = document.getElementById('dot-' + id);
+    const s = document.getElementById('sub-' + id);
+    const l = document.getElementById('lbl-' + id);
+    d.className = 'track-dot ' + state;
+    if (state === 'running') {
+      s.textContent = 'Running…'; s.className = 'track-sublabel running';
+      l.className = 'track-label active';
+    } else if (state === 'done') {
+      s.textContent = 'Done'; s.className = 'track-sublabel done';
+      l.className = 'track-label active';
+    } else {
+      s.textContent = '—'; s.className = 'track-sublabel';
+      l.className = 'track-label';
+    }
+  }
+  async function startBuild() {
+    const idea = document.getElementById('ideaInput').value.trim();
+    if (!idea) { document.getElementById('ideaInput').focus(); return; }
+    document.getElementById('empty').style.display = 'none';
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('buildBtn').disabled = true;
+    dot('d', 'running'); dot('c', ''); dot('p', '');
+    document.getElementById('trackFill').style.width = '0%';
+    try {
+      const res = await fetch('/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idea })
+      });
+      const data = await res.json();
+      dot('d', 'done'); dot('c', 'done'); dot('p', 'done');
+      document.getElementById('trackFill').style.width = '100%';
+      render(data);
+    } catch {
+      document.getElementById('loadingText').textContent = 'Something went wrong. Please try again.';
+      dot('d', '');
+    } finally {
+      document.getElementById('buildBtn').disabled = false;
+      document.getElementById('loading').style.display = 'none';
+    }
+  }
+  function render(data) {
+    const s = data.spec, r = data.review;
+    setText('r-title', s.title);
+    setText('r-genre', s.genre);
+    setText('r-difficulty', s.difficulty);
+    setText('r-goal', s.player_goal);
+    const mEl = document.getElementById('r-mechanics');
+    mEl.innerHTML = '';
+    (s.mechanics || []).forEach(m => {
+      const t = document.createElement('span');
+      t.className = 'tag'; t.textContent = m; mEl.appendChild(t);
+    });
+    generatedCode = data.code || '';
+    const preview = generatedCode.split('\n').slice(0, 14).join('\n');
+    document.getElementById('r-code').textContent = preview + '\n…';
+    const lc = generatedCode.split('\n').length;
+    document.getElementById('r-filename').textContent = `generated_game.py  ·  ${lc} lines`;
+    const sc = r.overall_score || 0;
+    setText('r-score', sc);
+    setTimeout(() => { document.getElementById('r-sbar').style.width = (sc * 10) + '%'; }, 80);
+    const vEl = document.getElementById('r-verdict');
+    const verdict = (r.verdict || '').toLowerCase();
+    if (verdict.includes('ship')) {
+      vEl.textContent = 'Ship it'; vEl.className = 'verdict-word ship';
+      setText('r-verdict-sub', 'This game is ready to play.');
+    } else {
+      vEl.textContent = 'Needs work'; vEl.className = 'verdict-word needs';
+      setText('r-verdict-sub', 'A few things to fix before it ships.');
+    }
+    const bugsEl = document.getElementById('r-bugs');
+    bugsEl.innerHTML = '';
+    (r.bugs_found || []).forEach(b => {
+      bugsEl.innerHTML += `<div class="item"><div class="item-dot dot-bug"></div><span>${esc(b)}</span></div>`;
+    });
+    document.getElementById('r-bugs-wrap').style.display = (r.bugs_found||[]).length ? 'block' : 'none';
+    const sugEl = document.getElementById('r-suggestions');
+    sugEl.innerHTML = '';
+    (r.suggestions || []).forEach(s => {
+      sugEl.innerHTML += `<div class="item"><div class="item-dot dot-tip"></div><span>${esc(s)}</span></div>`;
+    });
+    document.getElementById('r-sug-wrap').style.display = (r.suggestions||[]).length ? 'block' : 'none';
+    document.getElementById('results').style.display = 'block';
+  }
+  function setText(id, val) { document.getElementById(id).textContent = val || '—'; }
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function downloadGame() {
+    if (!generatedCode) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([generatedCode], { type: 'text/plain' }));
+    a.download = 'generated_game.py';
+    a.click();
+  }
+  document.getElementById('ideaInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') startBuild();
+  });
+</script>
 </body>
 </html>
